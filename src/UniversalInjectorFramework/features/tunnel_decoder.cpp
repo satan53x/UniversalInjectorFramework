@@ -19,6 +19,9 @@ BOOL __stdcall TextOutAHook(HDC hdc, int x, int y, LPCSTR lpString, int c)
 
 int __stdcall MultiByteToWideCharHook(UINT CodePage, DWORD dwFlags, LPCCH lpMultiByteStr, int cbMultiByte, LPWSTR lpWideCharStr, int cchWideChar)
 {
+	if (CodePage != CP_ACP && CodePage != CP_THREAD_ACP && CodePage != 932)
+		return MultiByteToWideChar(CodePage, dwFlags, lpMultiByteStr, cbMultiByte, lpWideCharStr, cchWideChar);
+
 	const auto& decoder = uif::injector::instance().feature<uif::features::tunnel_decoder>();
 	const auto& decoded = encoding::decode_shiftjis_tunnel(lpMultiByteStr, cbMultiByte, decoder.mapping);
 
