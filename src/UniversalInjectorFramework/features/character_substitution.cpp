@@ -8,6 +8,7 @@
 
 #pragma region Hooks
 
+// ---------------------------------------------
 static BOOL __stdcall TextOutWHook(HDC hdc, int x, int y, LPCWSTR lpString, int c) {
 	const auto& subst = uif::injector::instance().feature<uif::features::character_substitution>();
 	
@@ -28,7 +29,29 @@ static BOOL __stdcall TextOutAHook(HDC hdc, int x, int y, LPCSTR lpString, int c
 	const auto s = encoding::shiftjis_to_utf16(truncated);
 	return TextOutWHook(hdc, x, y, s.c_str(), static_cast<int>(s.length()));
 }
+// ---------------------------------------------
+static BOOL __stdcall ExtTextOutWHook(HDC hdc, int x, int y, UINT options, CONST RECT* lprect, LPCWSTR lpString, UINT c, CONST INT* lpDx) {
+	const auto& subst = uif::injector::instance().feature<uif::features::character_substitution>();
 
+	std::wstring s = lpString;
+	subst.substitute(s);
+
+	if (subst.is_debugging_enabled())
+	{
+		std::wcout << lpString << L" => " << s << L"\n";
+	}
+
+	return ExtTextOutW(hdc, x, y, options, lprect, s.c_str(), c, lpDx);
+}
+
+static BOOL __stdcall ExtTextOutAHook(HDC hdc, int x, int y, UINT options, CONST RECT* lprect, LPCSTR lpString, UINT c, CONST INT* lpDx) {
+	std::string truncated = lpString;
+	truncated.resize(c);
+	const auto s = encoding::shiftjis_to_utf16(truncated);
+	return ExtTextOutWHook(hdc, x, y, options, lprect, s.c_str(), static_cast<int>(s.length()), lpDx);
+}
+
+// ---------------------------------------------
 static DWORD  __stdcall GetGlyphOutlineWHook(HDC hdc, UINT uChar, UINT fuFormat, LPGLYPHMETRICS lpgm, DWORD cjBuffer, LPVOID pvBuffer, MAT2* lpmat2)
 {
 	//std::wcout << std::setw(4) << std::hex << uChar << std::dec << std::setw(0) << ' ' << *reinterpret_cast<wchar_t*>(&uChar) << '\n';
@@ -85,18 +108,82 @@ void uif::features::character_substitution::initialize()
 
 	std::cout << *this << " Loaded " << substCount << " substitution characters\n";
 
-	hooks::hook_import(this, "TextOutA", TextOutAHook);
-	hooks::hook_import(this, "TextOutW", TextOutWHook);
-	hooks::hook_import(this, "GetGlyphOutlineA", GetGlyphOutlineAHook);
-	hooks::hook_import(this, "GetGlyphOutlineW", GetGlyphOutlineWHook);
+	hook_functions.clear();
+	if (config().contains("hook_functions"))
+	{
+		auto& names = config()["hook_functions"];
+		if (names.is_array())
+		{
+			for (const auto& name : names)
+			{
+				if (!name.is_string()) continue;
+
+				std::string str_name;
+				name.get_to(str_name);
+				hook_functions.push_back(str_name);
+			}
+		}
+	}
+	else 
+	{
+		hook_functions.push_back("TextOutA");
+		hook_functions.push_back("TextOutW");
+		hook_functions.push_back("GetGlyphOutlineA");
+		hook_functions.push_back("GetGlyphOutlineW");
+	}
+
+	if (std::find(hook_functions.begin(), hook_functions.end(), "TextOutA") != hook_functions.end())
+	{
+		hooks::hook_import(this, "TextOutA", TextOutAHook);
+	}
+	if (std::find(hook_functions.begin(), hook_functions.end(), "TextOutW") != hook_functions.end())
+	{
+		hooks::hook_import(this, "TextOutW", TextOutWHook);
+	}
+	if (std::find(hook_functions.begin(), hook_functions.end(), "ExtTextOutA") != hook_functions.end())
+	{
+		hooks::hook_import(this, "ExtTextOutA", ExtTextOutAHook);
+	}
+	if (std::find(hook_functions.begin(), hook_functions.end(), "ExtTextOutW") != hook_functions.end())
+	{
+		hooks::hook_import(this, "ExtTextOutW", ExtTextOutWHook);
+	}
+	if (std::find(hook_functions.begin(), hook_functions.end(), "GetGlyphOutlineA") != hook_functions.end())
+	{
+		hooks::hook_import(this, "GetGlyphOutlineA", GetGlyphOutlineAHook);
+	}
+	if (std::find(hook_functions.begin(), hook_functions.end(), "GetGlyphOutlineW") != hook_functions.end())
+	{
+		hooks::hook_import(this, "GetGlyphOutlineW", GetGlyphOutlineWHook);
+	}
 }
 
 void uif::features::character_substitution::finalize()
 {
-	hooks::unhook_import(this, "TextOutA", TextOutAHook);
-	hooks::unhook_import(this, "TextOutW", TextOutWHook);
-	hooks::unhook_import(this, "GetGlyphOutlineA", GetGlyphOutlineAHook);
-	hooks::unhook_import(this, "GetGlyphOutlineW", GetGlyphOutlineWHook);
+	if (std::find(hook_functions.begin(), hook_functions.end(), "TextOutA") != hook_functions.end())
+	{
+		hooks::unhook_import(this, "TextOutA", TextOutAHook);
+	}
+	if (std::find(hook_functions.begin(), hook_functions.end(), "TextOutW") != hook_functions.end())
+	{
+		hooks::unhook_import(this, "TextOutW", TextOutWHook);
+	}
+	if (std::find(hook_functions.begin(), hook_functions.end(), "ExtTextOutA") != hook_functions.end())
+	{
+		hooks::unhook_import(this, "ExtTextOutA", ExtTextOutAHook);
+	}
+	if (std::find(hook_functions.begin(), hook_functions.end(), "ExtTextOutW") != hook_functions.end())
+	{
+		hooks::unhook_import(this, "ExtTextOutW", ExtTextOutWHook);
+	}
+	if (std::find(hook_functions.begin(), hook_functions.end(), "GetGlyphOutlineA") != hook_functions.end())
+	{
+		hooks::unhook_import(this, "GetGlyphOutlineA", GetGlyphOutlineAHook);
+	}
+	if (std::find(hook_functions.begin(), hook_functions.end(), "GetGlyphOutlineW") != hook_functions.end())
+	{
+		hooks::unhook_import(this, "GetGlyphOutlineW", GetGlyphOutlineWHook);
+	}
 }
 
 void uif::features::character_substitution::substitute(wchar_t* text, int length) const

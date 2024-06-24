@@ -14,5 +14,7 @@ namespace uif::features
 		void substitute(std::wstring& text) const;
 		
 		std::map<wchar_t, wchar_t> substitutions;
+
+		std::list<std::string> hook_functions;
 	};
 }
