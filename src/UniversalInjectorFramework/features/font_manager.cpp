@@ -131,6 +131,11 @@ HFONT WINAPI CreateFontAHook(
 	if(fontManager.create_font_settings.overrideFace)
 		pszFaceName = fontManager.create_font_settings.overrideFaceValueA.c_str();
 
+	if (fontManager.create_font_settings.overrideHeight)
+		cHeight = fontManager.create_font_settings.overrideHeightValue;
+	if (fontManager.create_font_settings.overrideWidth)
+		cWidth = fontManager.create_font_settings.overrideWidthValue;
+
 	return CreateFontA(cHeight, cWidth, cEscapement, cOrientation, cWeight, bItalic, bUnderline, bStrikeOut,
 		iCharSet, iOutPrecision, iClipPrecision, iQuality, iPitchAndFamily, pszFaceName);
 }
@@ -160,6 +165,11 @@ HFONT WINAPI CreateFontWHook(
 	if(fontManager.create_font_settings.overrideFace)
 		pszFaceName = fontManager.create_font_settings.overrideFaceValueW.c_str();
 
+	if (fontManager.create_font_settings.overrideHeight)
+		cHeight = fontManager.create_font_settings.overrideHeightValue;
+	if (fontManager.create_font_settings.overrideWidth)
+		cWidth = fontManager.create_font_settings.overrideWidthValue;
+
 	return CreateFontW(cHeight, cWidth, cEscapement, cOrientation, cWeight, bItalic, bUnderline, bStrikeOut,
 		iCharSet, iOutPrecision, iClipPrecision, iQuality, iPitchAndFamily, pszFaceName);
 }
@@ -180,6 +190,11 @@ HFONT WINAPI CreateFontIndirectAHook(const LOGFONTA* lplf)
 	if(fontManager.create_font_settings.overrideFace)
 		strcpy_s(logFont.lfFaceName, fontManager.create_font_settings.overrideFaceValueA.c_str());
 
+	if (fontManager.create_font_settings.overrideHeight)
+		logFont.lfHeight = fontManager.create_font_settings.overrideHeightValue;
+	if (fontManager.create_font_settings.overrideWidth)
+		logFont.lfWidth = fontManager.create_font_settings.overrideWidthValue;
+
 	return CreateFontIndirectA(&logFont);
 }
 
@@ -194,6 +209,11 @@ HFONT WINAPI CreateFontIndirectWHook(const LOGFONTW* lplf)
 
 	if(fontManager.create_font_settings.overrideFace)
 		wcscpy_s(logFont.lfFaceName, fontManager.create_font_settings.overrideFaceValueW.c_str());
+
+	if (fontManager.create_font_settings.overrideHeight)
+		logFont.lfHeight = fontManager.create_font_settings.overrideHeightValue;
+	if (fontManager.create_font_settings.overrideWidth)
+		logFont.lfWidth = fontManager.create_font_settings.overrideWidthValue;
 
 	return CreateFontIndirectW(&logFont);
 }
@@ -214,6 +234,11 @@ HFONT WINAPI CreateFontIndirectExAHook(const ENUMLOGFONTEXDVA* lplf)
 	if(fontManager.create_font_settings.overrideFace)
 		strcpy_s(logFont.elfEnumLogfontEx.elfLogFont.lfFaceName, fontManager.create_font_settings.overrideFaceValueA.c_str());
 
+	if (fontManager.create_font_settings.overrideHeight)
+		logFont.elfEnumLogfontEx.elfLogFont.lfHeight = fontManager.create_font_settings.overrideHeightValue;
+	if (fontManager.create_font_settings.overrideWidth)
+		logFont.elfEnumLogfontEx.elfLogFont.lfWidth = fontManager.create_font_settings.overrideWidthValue;
+
 	return CreateFontIndirectExA(&logFont);
 }
 
@@ -228,6 +253,11 @@ HFONT WINAPI CreateFontIndirectExWHook(const ENUMLOGFONTEXDVW* lplf)
 
 	if(fontManager.create_font_settings.overrideFace)
 		wcscpy_s(logFont.elfEnumLogfontEx.elfLogFont.lfFaceName, fontManager.create_font_settings.overrideFaceValueW.c_str());
+
+	if (fontManager.create_font_settings.overrideHeight)
+		logFont.elfEnumLogfontEx.elfLogFont.lfHeight = fontManager.create_font_settings.overrideHeightValue;
+	if (fontManager.create_font_settings.overrideWidth)
+		logFont.elfEnumLogfontEx.elfLogFont.lfWidth = fontManager.create_font_settings.overrideWidthValue;
 
 	return CreateFontIndirectExW(&logFont);
 }
@@ -321,6 +351,26 @@ void uif::features::font_manager::initialize()
 				create_font_settings.overrideFace = true;
 				value.get_to(create_font_settings.overrideFaceValueA);
 				create_font_settings.overrideFaceValueW.assign(encoding::utf8_to_utf16(create_font_settings.overrideFaceValueA));
+			}
+		}
+
+		if (config().contains("/spoof_creation/override_height"_json_pointer))
+		{
+			const auto& value = config()["/spoof_creation/override_height"_json_pointer];
+			if (value.is_number())
+			{
+				create_font_settings.overrideHeight = true;
+				create_font_settings.overrideHeightValue = value.get<INT>();
+			}
+		}
+
+		if (config().contains("/spoof_creation/override_width"_json_pointer))
+		{
+			const auto& value = config()["/spoof_creation/override_width"_json_pointer];
+			if (value.is_number())
+			{
+				create_font_settings.overrideWidth = true;
+				create_font_settings.overrideWidthValue = value.get<INT>();
 			}
 		}
 

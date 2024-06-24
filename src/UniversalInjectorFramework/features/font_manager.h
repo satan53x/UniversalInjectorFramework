@@ -21,9 +21,13 @@ namespace uif::features
 		std::string overrideFaceValueA;
 		std::wstring overrideFaceValueW;
 		BYTE overrideCharSetValue;
+		int overrideHeightValue;
+		int overrideWidthValue;
 
 		bool overrideFace;
 		bool overrideCharSet;
+		bool overrideHeight;
+		bool overrideWidth;
 	};
 
 	class font_manager : public feature_base
